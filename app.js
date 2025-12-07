@@ -64,24 +64,32 @@ app.post("/products", (request, response) => {
 
   const creating_product_table_query = `
         CREATE TABLE IF NOT EXISTS product_table(
-            product_id INTEGER NOT NULL AUTO_INCREMENT,
-            name TEXT NOT NULL,
-            category TEXT,
-            short_desc TEXT,
-            long_desc TEXT,
-            price DECIMAL(10, 2),
-            image_url TEXT,
-            size VARCHAR(100),
-            stock VARCHAR(100),
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (product_id)
-        )
-    `;
+      product_id INT NOT NULL AUTO_INCREMENT,
+      name TEXT NOT NULL,
+      category TEXT,
+      short_desc TEXT,
+      long_desc TEXT,
+      price DECIMAL(10, 2),
+      image_url TEXT,
+      size VARCHAR(100),
+      stock VARCHAR(100),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(product_id)
+    )`;
+
   db.query(creating_product_table_query, (err, result) => {
     if (err) {
       response.status(500).json("Cannot Crate Table");
       return;
     }
+
+    const checkSQL = `SELECT COUNT(*) AS count FROM product_table`;
+    db.query(checkSQL, (err, result) => {
+      if (err) return res.status(500).json("Error checking products");
+
+      if (result[0].count > 0) {
+        return res.status(200).json("Products already inserted");
+      }
 
     const insert_product_details_query = `
             INSERT INTO 
@@ -95,8 +103,10 @@ app.post("/products", (request, response) => {
         return;
       }
       response.status(200).json("Data Inserted Successfully");
+    
     });
   });
+   })
 });
 
 // select all the products based on the filters
