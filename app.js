@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const mysql = require("mysql2");
@@ -6,24 +7,39 @@ const cors = require("cors");
 app.use(express.json());
 app.use(cors());
 
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "https://your-frontend-domain.com"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    credentials: true,
+  })
+);
+
 let db = null;
 const initializeDbAndServer = async () => {
   try {
-    db = mysql.createConnection({
-      host: "localhost",
-      user: "vaishu",
-      password: "Bharu@96",
-      database: "product_showcase_and_enquiry_backend",
-      insecureAuth: true,
+    db = mysql.createPool({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      port: Number(process.env.DB_PORT || 3306),
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
     });
-    const port = 5000;
+     const port = process.env.DB_PORT || 3004;
     app.listen(port, () => {
       console.log(`app listening at ${port}...`);
     });
-    db.connect(function (err) {
-      if (err) throw err;
-      console.log("Conected!");
-    });
+    db.getConnection((err, connection) => {
+  if (err) {
+    console.error("Database connection failed:", err.message);
+  } else {
+    console.log("✅ Database connected successfully!");
+    connection.release();
+  }
+}); 
   } catch (e) {
     console.log(`DB Error: ${e.message}`);
     process.exit(1);
@@ -67,7 +83,6 @@ app.post("/products", (request, response) => {
       response.status(500).json("Cannot Crate Table");
       return;
     }
-   
 
     const insert_product_details_query = `
             INSERT INTO 
@@ -87,8 +102,8 @@ app.post("/products", (request, response) => {
 
 // select all the products based on the filters
 app.get("/get_products", (request, response) => {
-  const searchByName = request.query.search_by_name || ""
-  const filterByCategory = request.query.filter_by_category || ""
+  const searchByName = request.query.search_by_name || "";
+  const filterByCategory = request.query.filter_by_category || "";
 
   let get_all_products_from_table = `
         SELECT
@@ -99,13 +114,17 @@ app.get("/get_products", (request, response) => {
        name LIKE ? AND category LIKE ?
        `;
 
-  db.query(get_all_products_from_table, [`%${searchByName}%`, `%${filterByCategory}%`], (err, result) => {
-    if (err) {
-      response.status(500).json("Cannot Get Product Details");
-      return;
+  db.query(
+    get_all_products_from_table,
+    [`%${searchByName}%`, `%${filterByCategory}%`],
+    (err, result) => {
+      if (err) {
+        response.status(500).json("Cannot Get Product Details");
+        return;
+      }
+      response.status(200).json(result);
     }
-    response.status(200).json(result);
-  });
+  );
 });
 
 //Get Single product endpoint
@@ -150,7 +169,6 @@ app.post("/enquiry", (request, response) => {
       response.status(500).json("Cannot Create Table");
       return;
     }
-   
 
     const inser_data_into_enquiry_table_query = `
             INSERT INTO
