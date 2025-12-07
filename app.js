@@ -5,17 +5,16 @@ const mysql = require("mysql2");
 const cors = require("cors");
 
 app.use(express.json());
-app.use(cors());
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://your-frontend-domain.com"],
+    origin: ["http://localhost:3000"],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
   })
 );
 
-let db = null;
+let db;
 const initializeDbAndServer = async () => {
   try {
     db = mysql.createPool({
@@ -23,25 +22,25 @@ const initializeDbAndServer = async () => {
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      port:  3306,
+      port: 3306,
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
+      ssl: { rejectUnauthorized: false }, 
     });
-     const port = process.env.PORT || 3004;
-    app.listen(port, () => {
-      console.log(`app listening at ${port}...`);
-    });
+
     db.getConnection((err, connection) => {
-  if (err) {
-    console.error("Database connection failed:", err.message);
-  } else {
-    console.log("Database connected successfully!");
-    connection.release();
-  }
-}); 
+      if (err) console.error("DB Connection Failed:", err.message);
+      else {
+        console.log("Database Connected Successfully!");
+        connection.release();
+      }
+    });
+
+    const port = process.env.PORT || 3004;
+    app.listen(port, () => console.log(`Server running at ${port}...`));
   } catch (e) {
-    console.log(`DB Error: ${e.message}`);
+    console.log("DB Error: " + e.message);
     process.exit(1);
   }
 };
