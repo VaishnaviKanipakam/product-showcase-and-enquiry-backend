@@ -63,7 +63,7 @@ app.post("/products", (request, response) => {
   ]);
 
   const creating_product_table_query = `
-        CREATE TABLE IF NOT EXISTS product_table(
+    CREATE TABLE IF NOT EXISTS product_table(
       product_id INT NOT NULL AUTO_INCREMENT,
       name TEXT NOT NULL,
       category TEXT,
@@ -77,37 +77,37 @@ app.post("/products", (request, response) => {
       PRIMARY KEY(product_id)
     )`;
 
-  db.query(creating_product_table_query, (err, result) => {
+  db.query(creating_product_table_query, (err) => {
     if (err) {
-      response.status(500).json("Cannot Crate Table");
-      return;
+      return response.status(500).json("Cannot Create Table");
     }
 
     const checkSQL = `SELECT COUNT(*) AS count FROM product_table`;
+
     db.query(checkSQL, (err, result) => {
-      if (err) return res.status(500).json("Error checking products");
+      if (err) {
+        return response.status(500).json("Error checking products");
+      }
 
       if (result[0].count > 0) {
-        return res.status(200).json("Products already inserted");
+        return response.status(200).json("Products already inserted");
       }
 
-    const insert_product_details_query = `
-            INSERT INTO 
-                product_table 
-                     (name, category, short_desc,  long_desc,  price, image_url, size, stock)
-                VALUES  ? `;
+      const insert_product_details_query = `
+        INSERT INTO product_table
+          (name, category, short_desc, long_desc, price, image_url, size, stock)
+        VALUES ?`;
 
-    db.query(insert_product_details_query, [values], (err, result) => {
-      if (err) {
-        response.status(500).json("Cannot Insert Data");
-        return;
-      }
-      response.status(200).json("Data Inserted Successfully");
-    
+      db.query(insert_product_details_query, [values], (err) => {
+        if (err) {
+          return response.status(500).json("Cannot Insert Data");
+        }
+        response.status(200).json("Data Inserted Successfully");
+      });
     });
   });
-   })
 });
+
 
 // select all the products based on the filters
 app.get("/get_products", (request, response) => {
